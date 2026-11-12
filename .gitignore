@@ -1,0 +1,18 @@
+# Hasil video dan fail besar
+output/*
+!output/.gitkeep
+*.mp4
+*.mov
+*.mkv
+*.avi
+*.wav
+
+# Sistem dan editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Sementara
+*.tmp
+*.log
