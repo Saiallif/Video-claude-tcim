@@ -37,3 +37,15 @@ Video-claude-tcim/
 ## Pemilik
 
 [@Saiallif](https://github.com/Saiallif)
+
+## Video: PMDIUC PJJ Batch 2 – Tamat Final Exam Sem 1
+
+Video 70 saat (1920x1080, 30fps) menggunakan intro logo PMDIUC, gambar pelajar, kapsyen BM, zarah emas dan muzik bertema Islamik (maqam Hijaz).
+
+```bash
+python3 scripts/make_music.py assets/audio/muzik_pmdiuc.wav     # jana muzik asli (prosedural)
+python3 scripts/build_video.py                                    # hasil: output/PMDIUC_PJJ_Batch2_Tamat_Final_Exam_Sem1.mp4
+python3 scripts/build_video.py --music lagu_saya.mp3              # guna lagu sendiri (cadangan 96 BPM, 70 saat)
+```
+
+Keperluan: `ffmpeg`, `python3`, `numpy`, `Pillow`. Peralihan jatuh pada ketukan 96 BPM; jadual klip, kapsyen dan peralihan diedit dalam senarai `CLIPS` di `scripts/build_video.py`.
