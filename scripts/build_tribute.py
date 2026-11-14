@@ -40,25 +40,26 @@ LOGO_FULL = ROOT / "assets/images/logo_pmdiuc.png"      # logo + Diploma ... UKM
 SCENES = [
     dict(kind="open", t0=0.0),
     dict(kind="hero", t0=3.5),
-    dict(kind="still", file="IMG-20261114-WA0057.jpg", t0=21.5),
-    dict(kind="video", file="VID-20261114-WA0083.mp4", t0=25.5, ss=1.5),
-    dict(kind="still", file="IMG-20261114-WA0073.jpg", t0=29.0),
+    dict(kind="still", file="REQ1_men.jpg", t0=21.5),                                   # ~0:22
+    dict(kind="video", file="VID-20261114-WA0083.mp4", t0=25.5, ss=1.5),                # suasana kelas
+    dict(kind="video", file="VID-20261114-WA0085.mp4", t0=29.0, ss=2.0),                # suasana kelas
     dict(kind="still", file="IMG-20261114-WA0075.jpg", t0=34.0),
     dict(kind="still", file="IMG-20261114-WA0014.jpg", t0=39.25),
-    dict(kind="still", file="IMG-20261114-WA0031.jpg", t0=44.0),
+    dict(kind="video", file="VID-20261114-WA0084.mp4", t0=44.0, ss=1.0),                # kelas
     dict(kind="still", file="IMG-20261114-WA0044.jpg", t0=48.75),
-    dict(kind="video", file="VID-20261114-WA0072.mp4", t0=53.0, ss=2.0),
-    dict(kind="still", file="IMG-20261114-WA0086.jpg", t0=57.5),
-    dict(kind="still", file="IMG-20261114-WA0066.jpg", t0=62.0),
+    dict(kind="video", file="VID-20261114-WA0072.mp4", t0=53.0, ss=2.0),                # berucap
+    dict(kind="still", file="REQ2_women.jpg", t0=57.5),                                 # ~0:58
+    dict(kind="still", file="REQ3_mixed.jpg", t0=59.75),                                # ~0:59
+    dict(kind="video", file="VID-20261114-WA0074.mp4", t0=62.0, ss=1.0),                # berucap
     dict(kind="still", file="IMG-20261114-WA0095.jpg", t0=66.5),
     dict(kind="video", file="VID-20261114-WA0080.mp4", t0=70.5, ss=3.0),
-    dict(kind="still", file="IMG-20261114-WA0090.jpg", t0=75.25),
-    dict(kind="still", file="IMG-20261114-WA0068.jpg", t0=79.0),
+    dict(kind="still", file="REQ4_lunch.jpg", t0=75.25),                                # ~1:17
+    dict(kind="still", file="REQ5_women.jpg", t0=79.0),                                 # ~1:21
     dict(kind="video", file="VID-20261114-WA0071.mp4", t0=82.5, ss=2.0),
-    dict(kind="still", file="IMG-20261114-WA0078.jpg", t0=87.0),
-    dict(kind="still", file="IMG-20261114-WA0062.jpg", t0=90.5),
-    dict(kind="still", file="IMG-20261114-WA0088.jpg", t0=93.25),
-    dict(kind="still", file="IMG-20261114-WA0076.jpg", t0=97.0),
+    dict(kind="still", file="REQ7_speaker.jpg", t0=87.0),
+    dict(kind="still", file="REQ6_women.jpg", t0=90.5),
+    dict(kind="video", file="VID-20261114-WA0070.mp4", t0=93.25, ss=0.0),               # ~1:33 ustaz berucap
+    dict(kind="video", file="VID-20261114-WA0089.mp4", t0=97.0, ss=12.0),
     dict(kind="hero2", t0=100.25),
     dict(kind="end", t0=108.0),
 ]
