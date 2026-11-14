@@ -32,10 +32,10 @@ PANEL_W, PANEL_H = 1200, 675
 PCX, PCY = W // 2, 545        # pusat panel spotlight
 
 OUTER = ["IMG-20261114-WA0057.jpg", "IMG-20261114-WA0073.jpg", "IMG-20261114-WA0014.jpg", "IMG-20261114-WA0033.jpg",
-         "IMG-20261114-WA0086.jpg", "REQ2_women.jpg", "IMG-20261114-WA0036.jpg", "IMG-20261114-WA0090.jpg",
-         "IMG-20261114-WA0078.jpg", "IMG-20261114-WA0066.jpg", "REQ5_women.jpg", "IMG-20261114-WA0068.jpg",
+         "IMG-20261114-WA0081.jpg", "REQ2_women.jpg", "IMG-20261114-WA0036.jpg", "IMG-20261114-WA0091.jpg",
+         "IMG-20261114-WA0077.jpg", "IMG-20261114-WA0066.jpg", "REQ5_women.jpg", "IMG-20261114-WA0093.jpg",
          "IMG-20261114-WA0082.jpg", "IMG-20261114-WA0044.jpg"]
-INNER = ["IMG-20261114-WA0095.jpg", "IMG-20261114-WA0031.jpg", "IMG-20261114-WA0077.jpg", "IMG-20261114-WA0088.jpg",
+INNER = ["IMG-20261114-WA0095.jpg", "IMG-20261114-WA0031.jpg", "IMG-20261114-WA0096.jpg", "IMG-20261114-WA0092.jpg",
          "IMG-20261114-WA0062.jpg", "IMG-20261114-WA0069.jpg", "REQ6_women.jpg", "IMG-20261114-WA0076.jpg",
          "VID-20261114-WA0071.mp4@3", "VID-20261114-WA0085.mp4@4"]
 RINGS = [
@@ -46,18 +46,18 @@ RINGS = [
 # (jenis, fail, mula dalam video) -- setiap spotlight 4 saat (2 bar)
 SPOT_FILES = [
     ("img", "REQ1_men.jpg", 0), ("vid", "VID-20261114-WA0083.mp4", 1.5), ("vid", "VID-20261114-WA0085.mp4", 2.0),
-    ("img", "IMG-20261114-WA0075.jpg", 0), ("vid", "VID-20261114-WA0070.mp4", 0.0), ("img", "REQ7_speaker.jpg", 0),
+    ("img", "REQ2_women.jpg", 0), ("vid", "VID-20261114-WA0070.mp4", 0.0), ("img", "REQ7_speaker.jpg", 0),
     ("vid", "VID-20261114-WA0072.mp4", 2.0), ("img", "REQ4_lunch.jpg", 0),
-    ("vid", "VID-20261114-WA0084.mp4", 1.0), ("img", "REQ3_mixed.jpg", 0), ("vid", "VID-20261114-WA0074.mp4", 1.0),
-    ("vid", "VID-20261114-WA0071.mp4", 2.0), ("vid", "VID-20261114-WA0080.mp4", 3.0), ("vid", "VID-20261114-WA0089.mp4", 12.0),
+    ("vid", "VID-20261114-WA0084.mp4", 1.0), ("img", "REQ5_women.jpg", 0), ("vid", "VID-20261114-WA0074.mp4", 1.0),
+    ("img", "REQ6_women.jpg", 0), ("vid", "VID-20261114-WA0080.mp4", 3.0), ("vid", "VID-20261114-WA0087.mp4", 1.0),
 ]
 SPOT_T0 = [20 + 4 * i for i in range(8)] + [60 + 4 * i for i in range(6)]
 SPOT_D = 4.0
 SPOT_CAPS = ["Bermula dengan satu perjalanan…", "Bersama Ustaz, setiap hari ada ilmu baharu", "Suasana kelas yang kami rindui",
-             "Kenangan yang tak ternilai", "Nasihat dan bimbingan Ustaz kami simpan", "Terima kasih atas kesabaran Ustaz",
+             "Para mutawwifah PMDIUC, bersama dalam perjuangan", "Nasihat dan bimbingan Ustaz kami simpan", "Terima kasih atas kesabaran Ustaz",
              "Ketawa dan belajar bersama-sama", "Meja makan, cerita dan gelak tawa",
-             "Ukhuwah yang terbina kerana Ustaz", "Dari pendaftaran hingga ke dewan peperiksaan", "Ustaz sentiasa ada untuk kami",
-             "Setiap detik bersama Ustaz berharga", "Semoga sentiasa dalam lindungan Allah", "Kami akan sentiasa merindui Ustaz"]
+             "Senyuman mutawwifah buat Ustaz", "Dari pendaftaran hingga ke dewan peperiksaan", "Ustaz sentiasa ada untuk kami",
+             "Terima kasih daripada para mutawwifah", "Semoga sentiasa dalam lindungan Allah", "Kami akan sentiasa merindui Ustaz"]
 SPOT_WINDOWS = [(20.0, 52.0), (60.0, 84.0)]
 
 
