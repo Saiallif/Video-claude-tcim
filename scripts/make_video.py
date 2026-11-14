@@ -514,67 +514,96 @@ def D4(x, y, w):  # displayed 2000x1500 coords (4:3 photo)
 
 
 MONT = [
-    # (photo | "clip:<file>", box0 | clip start sec, box1, caption, beats)   - 4 beats per shot (~1.9 s)
-    ("wait", D4(0, 375, 2000), D4(280, 470, 1500), "LET'S BOWL!", 4),
-    ("score", (0.04, 0.30, 0.86), (0.20, 0.34, 0.56), "GAME ON!", 4),
-    ("g0224", D2K(0, 470, 820), D2K(60, 500, 700), "TEAMWORK", 4),
-    ("food", (0.0, 0.0, 1.0), (0.12, 0.10, 0.74), "GOOD FOOD", 4),
-    ("g0214", D2K(1180, 600, 820), D2K(1220, 640, 740), "GREAT PEOPLE", 4),
-    ("g0252", D2K(560, 660, 760), D2K(500, 600, 880), "ONE TEAM", 4),
-    ("wait", D4(900, 700, 1100), D4(1000, 820, 900), "FEEL THE ENERGY", 4),
-    ("g0217", D2K(1000, 520, 700), D2K(1060, 560, 620), "FUN TOGETHER", 4),
-    ("g0222", D2K(0, 470, 820), D2K(80, 520, 700), "STRONGER TEAM", 4),
-    ("g0226", D2K(620, 480, 760), D2K(660, 520, 660), "PLAY · LAUGH · BOND", 4),
-    ("score", (0.20, 0.55, 0.62), (0.28, 0.60, 0.42), "SCORE BIG!", 4),
-    ("g0228", D2K(1180, 600, 820), D2K(1240, 640, 700), "SPIRIT", 4),
-    ("g0214", D2K(1000, 520, 700), D2K(1060, 560, 640), "CONNECT", 4),
-    ("g0224", D2K(620, 480, 760), D2K(660, 520, 680), "UNWIND", 4),
-    ("g0222", D2K(1180, 600, 820), D2K(1230, 640, 720), "ENERGY", 4),
-    ("wait", D4(0, 375, 1400), D4(120, 430, 1250), "FUN", 4),
-    ("g0252", D2K(0, 470, 820), D2K(60, 510, 700), "TOGETHER", 4),
-    ("g0230", D2K(0, 250, 2000), D2K(100, 300, 1800), "ALL IN!", 4),
+    # k = photo | clip | tri (three portrait clips side by side); 4-8 beats per shot (1.9-3.8 s)
+    {"k": "photo", "name": "wait", "b0": D4(0, 375, 2000), "b1": D4(280, 470, 1500), "cap": "LET'S BOWL!", "beats": 4},
+    {"k": "tri", "items": [("WA0173.mp4", 0.4), ("WA0186.mp4", 0.2), ("WA0184.mp4", 0.2)], "cap": "GAME ON!", "beats": 8},
+    {"k": "photo", "name": "score", "b0": (0.24, 0.28, 0.70), "b1": (0.32, 0.33, 0.50), "cap": "EVERY PIN COUNTS", "beats": 4},
+    {"k": "tri", "items": [("WA0176.mp4", 0.0), ("WA0176.mp4", 0.9), ("WA0176.mp4", 1.8)], "cap": "GOOD FOOD", "beats": 8},
+    {"k": "clip", "file": "WA0175.mp4", "ss": 8.5, "cap": "FUN TOGETHER", "beats": 8},
+    {"k": "tri", "items": [("WA0180.mp4", 0.1), ("WA0177.mp4", 0.0), ("WA0188.mp4", 11.6)], "cap": "GREAT PEOPLE", "beats": 8},
+    {"k": "clip", "file": "WA0174.mp4", "ss": 12.5, "cap": "FEEL THE ENERGY", "beats": 8},
+    {"k": "tri", "items": [("WA0181.mp4", 1.5), ("WA0182.mp4", 3.0), ("WA0178.mp4", 2.0)], "cap": "UNWIND", "beats": 8},
+    {"k": "tri", "items": [("WA0187.mp4", 2.6), ("WA0187.mp4", 3.7), ("WA0187.mp4", 4.7)], "cap": "AIM. ROLL. STRIKE!", "beats": 8},
+    {"k": "tri", "items": [("WA0179.mp4", 0.4), ("WA0185.mp4", 3.0), ("WA0183.mp4", 7.0)], "cap": "CONNECT", "beats": 8},
 ]
 MONT_START = 20.0
 WIPES = [7.55, 19.55, 91.55, 119.55, 133.55, 147.55, 167.55]
 
 
-def prep_clips():
-    """Extract frames for every clip shot in MONT (ffmpeg, 30 fps)."""
+def _shots():
     for m in MONT:
-        if not m[0].startswith("clip:"):
-            continue
-        f, ss, beats = m[0][5:], m[1], m[4]
-        d = os.path.join(SRC, "clipframes", "%s_%s" % (f, ss))
+        if m["k"] == "clip":
+            yield m["file"], m["ss"], m["beats"]
+        elif m["k"] == "tri":
+            for f, ss in m["items"]:
+                yield f, ss, m["beats"]
+
+
+def _cdir(f, ss, beats):
+    return os.path.join(SRC, "clipframes", "%s_%s_%s" % (f, ss, beats))
+
+
+def prep_clips():
+    """Extract 30 fps frames for every clip shot; slow a clip slightly if it is too short for its slot."""
+    for f, ss, beats in _shots():
+        d = _cdir(f, ss, beats)
         if os.path.isdir(d) and os.listdir(d):
             continue
         os.makedirs(d, exist_ok=True)
-        subprocess.check_call(["ffmpeg", "-v", "error", "-y", "-ss", str(ss), "-t", "%.2f" % (beats * BEAT + 0.2),
-                               "-i", os.path.join(SRC, "clips", f), "-vf",
-                               "fps=30,scale='if(gt(iw,ih),1920,-2)':'if(gt(iw,ih),-2,1080)'", "-q:v", "3",
-                               os.path.join(d, "%04d.jpg")])
+        src = os.path.join(SRC, "clips", f)
+        dur = float(subprocess.check_output(["ffprobe", "-v", "error", "-show_entries", "format=duration",
+                                             "-of", "csv=p=0", src]))
+        need = beats * BEAT + 0.15
+        avail = max(0.3, dur - ss)
+        slow = 1.0 if avail >= need else max(0.55, avail / need)
+        subprocess.check_call(["ffmpeg", "-v", "error", "-y", "-ss", str(ss), "-t", "%.3f" % avail, "-i", src,
+                               "-vf", "setpts=PTS/%.4f,fps=30" % slow, "-frames:v", str(int(need * FPS) + 2),
+                               "-q:v", "2", os.path.join(d, "%04d.jpg")])
 
 
-def clip_view(f, ss, tin, pulse=0.0):
-    d = os.path.join(SRC, "clipframes", "%s_%s" % (f, ss))
-    n = len(os.listdir(d))
-    idx = max(1, min(int(tin * FPS) + 1, n))
-    im = Image.open(os.path.join(d, "%04d.jpg" % idx)).convert("RGB")
+@lru_cache(maxsize=256)
+def _count(d):
+    return len(os.listdir(d))
+
+
+def clip_frame(f, ss, beats, tin):
+    d = _cdir(f, ss, beats)
+    idx = max(1, min(int(tin * FPS) + 1, _count(d)))
+    return Image.open(os.path.join(d, "%04d.jpg" % idx)).convert("RGB")
+
+
+def clip_single(m, tin, pulse=0.0):
+    im = clip_frame(m["file"], m["ss"], m["beats"], tin)
     iw, ih = im.size
     z = 1 - 0.03 * pulse
-    if iw / ih >= 1.6:
-        bw, bh = iw * z, iw * z * 9 / 16
-        x0, y0 = (iw - bw) / 2, (ih - bh) / 2
-        return im.resize((W, H), Image.BICUBIC, box=(x0, y0, x0 + bw, y0 + bh))
-    # portrait / square clip: blurred cover background + centred sharp frame
-    bg = im.resize((W, int(W * ih / iw)), Image.BILINEAR)
-    top = (bg.height - H) // 2
-    bg = bg.crop((0, top, W, top + H)).filter(ImageFilter.GaussianBlur(28))
-    bg = ImageEnhance.Brightness(bg).enhance(0.55)
+    # fast blurred cover background
+    sm = im.resize((W // 10, int(W // 10 * ih / iw)), Image.BILINEAR)
+    top = max(0, (sm.height - H // 10) // 2)
+    sm = sm.crop((0, top, W // 10, top + H // 10)).filter(ImageFilter.GaussianBlur(2.2))
+    bg = ImageEnhance.Brightness(sm.resize((W, H), Image.BICUBIC)).enhance(0.8)
     fh = int(H * z)
     fw = int(iw * fh / ih)
-    fg = im.resize((fw, fh), Image.BICUBIC)
-    bg.paste(fg, ((W - fw) // 2, (H - fh) // 2))
+    bg.paste(im.resize((fw, fh), Image.BICUBIC), ((W - fw) // 2, (H - fh) // 2))
     return bg
+
+
+def clip_tri(m, tin, lbeat, pulse=0.0):
+    cv = Image.new("RGB", (W, H), DEEP)
+    pw = W // 3
+    z = 1 - 0.035 * pulse
+    for i, (f, ss) in enumerate(m["items"]):
+        im = clip_frame(f, ss, m["beats"], tin)
+        iw, ih = im.size
+        bh = min(ih, iw * H / pw) * z          # crop window matching panel aspect
+        bw = bh * pw / H
+        x0, y0 = (iw - bw) / 2, (ih - bh) / 2
+        panel = im.resize((pw, H), Image.BICUBIC, box=(x0, y0, x0 + bw, y0 + bh))
+        u = eo5(seg(lbeat, i * 0.4, i * 0.4 + 0.8))
+        cv.paste(panel, (i * pw, int((1 - u) * H)))
+    d = ImageDraw.Draw(cv)
+    for i in (1, 2):
+        d.rectangle([i * pw - 4, 0, i * pw + 3, H], fill=WHITE)
+    return cv
 
 
 @lru_cache(maxsize=1)
@@ -583,28 +612,32 @@ def _logo_img():
     return Image.open(p).convert("RGBA") if os.path.exists(p) else None
 
 
-def logo_layer(size):
-    """Real TCIM logo if src/logo.png exists, otherwise the typeset wordmark."""
+@lru_cache(maxsize=8)
+def logo_plate(w):
+    """Real TCIM logo on a white rounded plate (the logo is dark blue, so it needs a light backdrop)."""
     lg = _logo_img()
     if lg is None:
-        return tcim_wordmark(size)
-    bb = lg.getbbox()
-    lg = lg.crop(bb) if bb else lg
-    h = int(size * 0.95)
-    lg = lg.resize((int(lg.width * h / lg.height), h), Image.LANCZOS)
-    pad = 30
-    out = Image.new("RGBA", (lg.width + 2 * pad, lg.height + 2 * pad), (255, 255, 255, 0))
-    out.alpha_composite(lg, (pad, pad))
-    return out
+        return tcim_wordmark(int(w * 0.4))
+    lg = lg.crop(lg.getbbox())
+    lh = int(w * lg.height / lg.width)
+    lg = lg.resize((w, lh), Image.LANCZOS)
+    pad = int(w * 0.07)
+    S = 3
+    big = Image.new("RGBA", ((w + 2 * pad) * S, (lh + 2 * pad) * S), (0, 0, 0, 0))
+    ImageDraw.Draw(big).rounded_rectangle([0, 0, big.width - 1, big.height - 1], radius=int(pad * 1.2 * S),
+                                          fill=(255, 255, 255, 255))
+    plate = big.resize((w + 2 * pad, lh + 2 * pad), Image.LANCZOS)
+    plate.alpha_composite(lg, (pad, pad))
+    return plate
 
 
 def mont_index(bt):
     t = MONT_START
     for i, m in enumerate(MONT):
-        if bt < t + m[4]:
+        if bt < t + m["beats"]:
             return i, t
-        t += m[4]
-    return len(MONT) - 1, t - MONT[-1][4]
+        t += m["beats"]
+    return len(MONT) - 1, t - MONT[-1]["beats"]
 
 
 # ------------------------------------------------------------------ scenes
@@ -622,8 +655,7 @@ def scene_intro(bt, tsec):
 
     # header chip
     cu = back(seg(bt, 0.4, 1.2))
-    chip(cv, "TCIM  ·  YEC 2026", 130 + 290 * cu - 290, 110, 44, RED, WHITE, F_XB_IT, 38,
-         alpha=clamp(cu * 3) * (1 - seg(bt, 3.6, 4.0)), anchor="l", tracking=3)
+    put(cv, logo_plate(300), 70, 120 + shy, cu, alpha=clamp(cu * 3) * (1 - seg(bt, 3.6, 4.0)), anchor="l")
     # staggered lines
     L1 = text_layer("STAFF", F_BLACK_IT, 210, WHITE, stroke=0, shadow=8, shadow_fill=(0, 0, 40))
     L2 = text_layer("ENGAGEMENT", F_BLACK_IT, 150, WHITE, shadow=7, shadow_fill=(0, 0, 40))
@@ -763,29 +795,27 @@ def caption_for(cv, txt, bt, start, end, y=930, size=104):
 
 def scene_montage(bt, tsec):
     i, t0 = mont_index(bt)
-    name, b0, b1, cap, dur = MONT[i]
+    m = MONT[i]
+    dur = m["beats"]
     u = clamp((bt - t0) / dur)
     pulse = (1 - ((bt - t0) % 1.0)) ** 3
-    # slight direction variety via shift
-    sx = (i % 3 - 1) * 14 * (1 - u)
-    if name.startswith("clip:"):
-        cv = clip_view(name[5:], b0, (bt - t0) * BEAT, pulse * 0.6).copy()
+    tin = (bt - t0) * BEAT
+    if m["k"] == "photo":
+        sx = (i % 3 - 1) * 14 * (1 - u)
+        cv = view(photo(m["name"]), m["b0"], m["b1"], u, pulse * 0.55, (sx, 0)).copy()
+    elif m["k"] == "clip":
+        cv = clip_single(m, tin, pulse * 0.6)
     else:
-        cv = view(photo(name), b0, b1, u, pulse * 0.55, (sx, 0)).copy()
+        cv = clip_tri(m, tin, bt - t0, pulse * 0.5)
     cv.paste((6, 12, 60), (0, 0), bottom_grad())
-    # diagonal colour corners
     d = ImageDraw.Draw(cv)
     d.polygon([(0, 0), (430, 0), (0, 150)], fill=RED)
     d.polygon([(0, 0), (300, 0), (0, 105)], fill=NAVY)
     d.polygon([(W, H), (W - 520, H), (W, H - 180)], fill=NAVY)
     d.polygon([(W, H), (W - 320, H), (W, H - 110)], fill=RED)
-    # tag
     tag = text_layer("TCIM BOWLING NIGHT 2026", F_XB_IT, 36, WHITE, shadow=3, tracking=3)
     put(cv, tag, W - 40, 60, anchor="r")
-    # counter  "01/20" style
-    cnt = text_layer("%02d" % (i + 1), F_BLACK_IT, 62, WHITE, shadow=3)
-    put(cv, cnt, 38, 36, anchor="l") if False else None
-    caption_for(cv, cap, bt, t0, t0 + dur, 920, 104)
+    caption_for(cv, m["cap"], bt, t0, t0 + dur, 920, 104)
     equalizer(cv, tsec, bt, H, 64, RED)
     cv.paste((0, 0, 0), (0, 0), vignette())
     flash(cv, 0.22 * (1 - clamp((bt - t0) / 0.28)))
@@ -948,12 +978,8 @@ def scene_hero(bt, tsec):
     lb = bt - b0
     second = lb >= 10.0
     pulse = (1 - (bt % 1.0)) ** 3
-    if not second:
-        u = seg(lb, -0.5, 10.0)
-        cv = view(photo("g0214"), (0.0, 0.0, 1.0), D2K(160, 200, 1680), u, pulse * 0.5)
-    else:
-        u = seg(lb, 10.0, 20.0)
-        cv = view(photo("g0224"), (0.0, 0.0, 1.0), D2K(100, 150, 1800), u, pulse * 0.5)
+    u = seg(lb, -0.5, 20.0)
+    cv = view(photo("g0214"), (0.0, 0.0, 1.0), D2K(220, 250, 1560), u, pulse * 0.5)
     cv = cv.copy()
     cv.paste((6, 12, 60), (0, 0), top_grad())
     shx, shy = shake(bt, b0 + 0.5, 8, 0.4)
@@ -1008,8 +1034,8 @@ def scene_end(bt, tsec):
     shx3, shy3 = shake(bt, b0 + 12, 20, 1.0)
     shx += shx3
     shy += shy3
-    wm = logo_layer(340)
-    slam(cv, wm, 960 + shx, 300 + shy, bt, b0 + 0.1, 0.6, 2.6, -5)
+    wm = logo_plate(740)
+    slam(cv, wm, 960 + shx, 255 + shy, bt, b0 + 0.1, 0.6, 2.6, -5)
     if lb >= 2.0:
         cu = back(seg(lb, 2.0, 2.8), 1.4)
         chip(cv, "BOWLING NIGHT 2026", 960 + shx, 560 + shy, 120, RED, WHITE, F_BLACK_IT, 70, scale=cu,
