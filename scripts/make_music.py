@@ -13,7 +13,7 @@ from scipy import signal
 SR = 44100
 BPM = 128.0
 BEAT = 60.0 / BPM
-TOTAL_BEATS = 104
+TOTAL_BEATS = 184
 N = int(SR * BEAT * TOTAL_BEATS) + SR  # + 1s tail
 rng = np.random.default_rng(7)
 
@@ -257,11 +257,10 @@ def section(beat):
     """Return flags describing what plays at a given absolute beat."""
     return dict(
         intro=beat < 8,
-        brk=52 <= beat < 56,
-        outro_end=beat >= 100,
-        lead=(20 <= beat < 52) or (56 <= beat < 100),
-        lead_hi=(76 <= beat < 100),
-        full=(8 <= beat < 52) or (56 <= beat < 100),
+        brk=88 <= beat < 92,
+        lead=(20 <= beat < 88) or (92 <= beat < 180),
+        lead_hi=(148 <= beat < 180),
+        full=(8 <= beat < 88) or (92 <= beat < 180),
     )
 
 
@@ -274,8 +273,6 @@ for beat in range(TOTAL_BEATS):
     # kick
     if (s["intro"] and beat >= 2) or s["full"]:
         add(drums, t0, K, 1.0)
-    if beat >= 100:
-        pass
     # claps / snare on 2 and 4
     if (s["full"] or s["intro"]) and beat % 2 == 1 and beat >= 3:
         add(drums, t0, CL, 0.55, 0.0)
@@ -357,43 +354,42 @@ add(fx, b2s(11), riser(BEAT * 1.0, 800, 12000), 0.4)
 # montage start 20
 add(fx, b2s(20), crash(2.0), 0.4)
 add(fx, b2s(18), riser(BEAT * 2), 0.4)
-# breakdown 52-56
-add(fx, b2s(52), crash(1.5), 0.35)
-add(fx, b2s(52), riser(BEAT * 4, 200, 11000), 0.8)
-snare_roll(52.0, 4, 0.9)
-# drop back at 56
-add(fx, b2s(56), crash(3.0), 0.6)
-add(fx, b2s(56), subdrop(), 1.0)
-# perfect game at 66
-add(fx, b2s(65), riser(BEAT * 1.0, 800, 12000), 0.4)
-add(fx, b2s(66), crash(2.6), 0.55)
-add(fx, b2s(66), subdrop(1.0), 0.9)
-# group photo reveal 68
-add(fx, b2s(68), crash(2.0), 0.4)
-# end card 88
-add(fx, b2s(86), riser(BEAT * 2), 0.5)
-add(fx, b2s(88), crash(3.0), 0.55)
-add(fx, b2s(88), subdrop(), 0.9)
-# final build + hit at 100
-add(fx, b2s(96), riser(BEAT * 4, 300, 12000), 0.7)
-snare_roll(98, 2, 0.9)
-add(fx, b2s(100), crash(3.8), 0.75)
-add(fx, b2s(100), subdrop(1.6), 1.1)
-add(fx, b2s(100), K, 1.0)
-add(fx, b2s(100), CL, 0.8)
+# short breakdown before the results section
+add(fx, b2s(88), crash(1.5), 0.35)
+add(fx, b2s(88), riser(BEAT * 4, 200, 11000), 0.8)
+snare_roll(88.0, 4, 0.9)
+# results start (92): team standings
+add(fx, b2s(92), crash(3.0), 0.6)
+add(fx, b2s(92), subdrop(), 1.0)
+# champions reveal 106, men's section 120, women's section 134
+for hb in (106, 120, 134):
+    add(fx, b2s(hb - 1), riser(BEAT * 1.0, 800, 12000), 0.35)
+    add(fx, b2s(hb), crash(2.2), 0.45)
+    add(fx, b2s(hb), subdrop(0.9), 0.8)
+# group-photo finale 148
+add(fx, b2s(148), crash(2.4), 0.5)
+add(fx, b2s(148), subdrop(), 0.8)
+# end card 168
+add(fx, b2s(166), riser(BEAT * 2), 0.5)
+add(fx, b2s(168), crash(3.0), 0.55)
+add(fx, b2s(168), subdrop(), 0.9)
+# final build + hit at 180
+add(fx, b2s(176), riser(BEAT * 4, 300, 12000), 0.7)
+snare_roll(178, 2, 0.9)
+add(fx, b2s(180), crash(3.8), 0.75)
+add(fx, b2s(180), subdrop(1.6), 1.1)
+add(fx, b2s(180), K, 1.0)
+add(fx, b2s(180), CL, 0.8)
 final = sum(supersaw(note(n(x)), 2.0, 1.0) for x in ["C3", "G3", "C4", "E4", "G4", "C5"]) / 6
-add(fx, b2s(100), lp(final, 5000), 0.55)
+add(fx, b2s(180), lp(final, 5000), 0.55)
 
-# whooshes on every scene wipe (centre beats), pin crash on the strike, bells on scoreboard strikes
-for wc in (7.55, 19.55, 51.55, 67.55, 87.55):
+# whooshes on every scene wipe, pin crash on the strike, bells on each #1 reveal
+for wc in (7.55, 19.55, 91.55, 119.55, 133.55, 147.55, 167.55):
     add(fx, b2s(wc - 0.5), whoosh(BEAT * 1.0), 0.55)
 add(fx, b2s(12.0), pin_crash(), 0.9)
-scale = ["C5", "D5", "E5", "F5", "G5", "A5", "B5", "C6", "D6", "E6"]
-for k, nm in enumerate(scale):
-    add(fx, b2s(56 + k), bell(note(n(nm))), 0.30, pan=-0.3 + 0.07 * k)
-add(fx, b2s(66), bell(note(n("C6")), 1.4), 0.35)
-add(fx, b2s(66), bell(note(n("E6")), 1.4), 0.30)
-add(fx, b2s(66), bell(note(n("G6")), 1.4), 0.30)
+for hb in (106.0, 127.0, 141.0):
+    for nm in ("C6", "E6", "G6"):
+        add(fx, b2s(hb), bell(note(n(nm)), 1.4), 0.30)
 
 # --- cut everything after the final hit (except the hit's own tail) - handled by fades below
 # ---------------------------------------------------------------- sidechain + mix
@@ -416,7 +412,7 @@ mix = drums * 0.95 + tonal * 0.95 + fx * 0.9
 mix = np.tanh(mix * 0.95)
 # end fade
 total_len = b2s(TOTAL_BEATS)
-fade_start = b2s(102)
+fade_start = b2s(182)
 fade = np.ones(N)
 fade[fade_start : total_len] = np.linspace(1, 0, total_len - fade_start) ** 1.5
 fade[total_len:] = 0

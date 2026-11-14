@@ -18,10 +18,13 @@ import numpy as np
 from PIL import Image, ImageChops, ImageDraw, ImageEnhance, ImageFilter, ImageFont
 from scipy.interpolate import PchipInterpolator
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from results_data import AWARDS, TEAMS  # noqa: E402
+
 W, H, FPS = 1920, 1080, 30
 BPM = 128.0
 BEAT = 60.0 / BPM
-TOTAL_BEATS = 104
+TOTAL_BEATS = 184
 NFRAMES = int(round(TOTAL_BEATS * BEAT * FPS))
 
 SRC = os.environ.get("TCIM_SRC", "src")
@@ -511,30 +514,88 @@ def D4(x, y, w):  # displayed 2000x1500 coords (4:3 photo)
 
 
 MONT = [
-    ("wait", D4(0, 375, 2000), D4(280, 470, 1500), "LET'S BOWL!", 2),
-    ("score", (0.04, 0.30, 0.86), (0.20, 0.34, 0.56), "GAME ON!", 2),
-    ("g0224", D2K(0, 470, 820), D2K(60, 500, 700), "TEAMWORK", 2),
-    ("food", (0.0, 0.0, 1.0), (0.12, 0.10, 0.74), "GOOD FOOD", 2),
-    ("g0214", D2K(1180, 600, 820), D2K(1220, 640, 740), "GREAT PEOPLE", 2),
-    ("g0252", D2K(560, 660, 760), D2K(500, 600, 880), "ONE TEAM", 2),
-    ("wait", D4(900, 700, 1100), D4(1000, 820, 900), "FEEL THE ENERGY", 2),
-    ("g0217", D2K(1000, 520, 700), D2K(1060, 560, 620), "FUN TOGETHER", 2),
-    ("g0222", D2K(0, 470, 820), D2K(80, 520, 700), "STRONGER TEAM", 2),
-    ("g0226", D2K(620, 480, 760), D2K(660, 520, 660), "PLAY · LAUGH · BOND", 2),
-    ("score", (0.20, 0.55, 0.62), (0.28, 0.60, 0.42), "SCORE BIG!", 2),
-    ("g0228", D2K(1180, 600, 820), D2K(1240, 640, 700), "SPIRIT", 2),
-    # accelerating hype cuts (1 beat each)
-    ("g0214", D2K(1000, 520, 700), D2K(1060, 560, 640), "CONNECT", 1),
-    ("g0224", D2K(620, 480, 760), D2K(660, 520, 680), "UNWIND", 1),
-    ("g0222", D2K(1180, 600, 820), D2K(1230, 640, 720), "ENERGY", 1),
-    ("wait", D4(0, 375, 1400), D4(120, 430, 1250), "FUN", 1),
-    ("g0252", D2K(0, 470, 820), D2K(60, 510, 700), "TOGETHER", 1),
-    ("g0217", D2K(560, 640, 760), D2K(500, 590, 860), "ALL IN!", 1),
-    ("g0226", D2K(1180, 600, 820), D2K(1240, 640, 700), "TEAM TCIM", 1),
-    ("g0228", D2K(0, 250, 2000), D2K(100, 300, 1800), "GAME ON!", 1),
+    # (photo | "clip:<file>", box0 | clip start sec, box1, caption, beats)   - 4 beats per shot (~1.9 s)
+    ("wait", D4(0, 375, 2000), D4(280, 470, 1500), "LET'S BOWL!", 4),
+    ("score", (0.04, 0.30, 0.86), (0.20, 0.34, 0.56), "GAME ON!", 4),
+    ("g0224", D2K(0, 470, 820), D2K(60, 500, 700), "TEAMWORK", 4),
+    ("food", (0.0, 0.0, 1.0), (0.12, 0.10, 0.74), "GOOD FOOD", 4),
+    ("g0214", D2K(1180, 600, 820), D2K(1220, 640, 740), "GREAT PEOPLE", 4),
+    ("g0252", D2K(560, 660, 760), D2K(500, 600, 880), "ONE TEAM", 4),
+    ("wait", D4(900, 700, 1100), D4(1000, 820, 900), "FEEL THE ENERGY", 4),
+    ("g0217", D2K(1000, 520, 700), D2K(1060, 560, 620), "FUN TOGETHER", 4),
+    ("g0222", D2K(0, 470, 820), D2K(80, 520, 700), "STRONGER TEAM", 4),
+    ("g0226", D2K(620, 480, 760), D2K(660, 520, 660), "PLAY · LAUGH · BOND", 4),
+    ("score", (0.20, 0.55, 0.62), (0.28, 0.60, 0.42), "SCORE BIG!", 4),
+    ("g0228", D2K(1180, 600, 820), D2K(1240, 640, 700), "SPIRIT", 4),
+    ("g0214", D2K(1000, 520, 700), D2K(1060, 560, 640), "CONNECT", 4),
+    ("g0224", D2K(620, 480, 760), D2K(660, 520, 680), "UNWIND", 4),
+    ("g0222", D2K(1180, 600, 820), D2K(1230, 640, 720), "ENERGY", 4),
+    ("wait", D4(0, 375, 1400), D4(120, 430, 1250), "FUN", 4),
+    ("g0252", D2K(0, 470, 820), D2K(60, 510, 700), "TOGETHER", 4),
+    ("g0230", D2K(0, 250, 2000), D2K(100, 300, 1800), "ALL IN!", 4),
 ]
 MONT_START = 20.0
-WIPES = [7.55, 19.55, 51.55, 67.55, 87.55]
+WIPES = [7.55, 19.55, 91.55, 119.55, 133.55, 147.55, 167.55]
+
+
+def prep_clips():
+    """Extract frames for every clip shot in MONT (ffmpeg, 30 fps)."""
+    for m in MONT:
+        if not m[0].startswith("clip:"):
+            continue
+        f, ss, beats = m[0][5:], m[1], m[4]
+        d = os.path.join(SRC, "clipframes", "%s_%s" % (f, ss))
+        if os.path.isdir(d) and os.listdir(d):
+            continue
+        os.makedirs(d, exist_ok=True)
+        subprocess.check_call(["ffmpeg", "-v", "error", "-y", "-ss", str(ss), "-t", "%.2f" % (beats * BEAT + 0.2),
+                               "-i", os.path.join(SRC, "clips", f), "-vf",
+                               "fps=30,scale='if(gt(iw,ih),1920,-2)':'if(gt(iw,ih),-2,1080)'", "-q:v", "3",
+                               os.path.join(d, "%04d.jpg")])
+
+
+def clip_view(f, ss, tin, pulse=0.0):
+    d = os.path.join(SRC, "clipframes", "%s_%s" % (f, ss))
+    n = len(os.listdir(d))
+    idx = max(1, min(int(tin * FPS) + 1, n))
+    im = Image.open(os.path.join(d, "%04d.jpg" % idx)).convert("RGB")
+    iw, ih = im.size
+    z = 1 - 0.03 * pulse
+    if iw / ih >= 1.6:
+        bw, bh = iw * z, iw * z * 9 / 16
+        x0, y0 = (iw - bw) / 2, (ih - bh) / 2
+        return im.resize((W, H), Image.BICUBIC, box=(x0, y0, x0 + bw, y0 + bh))
+    # portrait / square clip: blurred cover background + centred sharp frame
+    bg = im.resize((W, int(W * ih / iw)), Image.BILINEAR)
+    top = (bg.height - H) // 2
+    bg = bg.crop((0, top, W, top + H)).filter(ImageFilter.GaussianBlur(28))
+    bg = ImageEnhance.Brightness(bg).enhance(0.55)
+    fh = int(H * z)
+    fw = int(iw * fh / ih)
+    fg = im.resize((fw, fh), Image.BICUBIC)
+    bg.paste(fg, ((W - fw) // 2, (H - fh) // 2))
+    return bg
+
+
+@lru_cache(maxsize=1)
+def _logo_img():
+    p = os.path.join(SRC, "logo.png")
+    return Image.open(p).convert("RGBA") if os.path.exists(p) else None
+
+
+def logo_layer(size):
+    """Real TCIM logo if src/logo.png exists, otherwise the typeset wordmark."""
+    lg = _logo_img()
+    if lg is None:
+        return tcim_wordmark(size)
+    bb = lg.getbbox()
+    lg = lg.crop(bb) if bb else lg
+    h = int(size * 0.95)
+    lg = lg.resize((int(lg.width * h / lg.height), h), Image.LANCZOS)
+    pad = 30
+    out = Image.new("RGBA", (lg.width + 2 * pad, lg.height + 2 * pad), (255, 255, 255, 0))
+    out.alpha_composite(lg, (pad, pad))
+    return out
 
 
 def mont_index(bt):
@@ -707,7 +768,10 @@ def scene_montage(bt, tsec):
     pulse = (1 - ((bt - t0) % 1.0)) ** 3
     # slight direction variety via shift
     sx = (i % 3 - 1) * 14 * (1 - u)
-    cv = view(photo(name), b0, b1, u, pulse, (sx, 0)).copy()
+    if name.startswith("clip:"):
+        cv = clip_view(name[5:], b0, (bt - t0) * BEAT, pulse * 0.6).copy()
+    else:
+        cv = view(photo(name), b0, b1, u, pulse * 0.55, (sx, 0)).copy()
     cv.paste((6, 12, 60), (0, 0), bottom_grad())
     # diagonal colour corners
     d = ImageDraw.Draw(cv)
@@ -721,125 +785,199 @@ def scene_montage(bt, tsec):
     # counter  "01/20" style
     cnt = text_layer("%02d" % (i + 1), F_BLACK_IT, 62, WHITE, shadow=3)
     put(cv, cnt, 38, 36, anchor="l") if False else None
-    caption_for(cv, cap, bt, t0, t0 + dur, 920 if dur > 1 else 920, 104 if dur > 1 else 118)
+    caption_for(cv, cap, bt, t0, t0 + dur, 920, 104)
     equalizer(cv, tsec, bt, H, 64, RED)
     cv.paste((0, 0, 0), (0, 0), vignette())
-    flash(cv, 0.30 * (1 - clamp((bt - t0) / 0.28)))
+    flash(cv, 0.22 * (1 - clamp((bt - t0) / 0.28)))
     return cv
 
 
-def scene_score(bt, tsec):
+MEDAL = {1: GOLD, 2: (205, 212, 230), 3: (214, 134, 64)}
+INK = (12, 26, 100)
+
+
+def fmt(n):
+    return "{:,}".format(n)
+
+
+@lru_cache(maxsize=64)
+def row_layer(rank, team, g1, g2, total):
+    w, h = 1320, 52
+    if rank <= 3:
+        col, tcol = MEDAL[rank], INK
+    else:
+        col, tcol = ((22, 52, 170) if rank % 2 == 0 else (16, 40, 138)), WHITE
+    base = chip_layer(w, h, col, 0.28)
+    img = Image.new("RGBA", base.size, (0, 0, 0, 0))
+    img.paste(base, (0, 0))
+
+    def t(txt, cx, size=36, left=False):
+        tl = text_layer(txt, F_BLACK_IT, size, tcol)
+        x = cx if left else cx - tl.width // 2
+        img.alpha_composite(tl, (int(x), (h - tl.height) // 2))
+
+    t(str(rank), 60, 38)
+    t(team, 140, 38, left=True)
+    t(str(g1), 800)
+    t(str(g2), 1000)
+    t(fmt(total), 1190, 40)
+    return img
+
+
+def scene_teams(bt, tsec):
+    L0 = 92.0
     cv = radial_bg().copy()
     sunburst(cv, tsec, (70, 120, 255), 0.18, 16)
-    shx, shy = shake(bt, 66.0, 18, 0.9)
-    # header
-    hu = back(seg(bt, 52.0, 52.8))
-    hl = text_layer("TEAM TCIM", F_BLACK_IT, 170, WHITE, stroke=0, shadow=10, shadow_fill=RED)
-    put(cv, hl, 960, 170 + shy, hu, alpha=clamp(hu * 3))
-    sl = text_layer("EVERY PERSON  ·  EVERY STRIKE  ·  ONE TEAM", F_XB_IT, 40, WHITE, tracking=4)
-    put(cv, sl, 960, 292, alpha=clamp(seg(bt, 52.6, 53.4)))
-    # board
-    bu = eo5(seg(bt, 52.2, 53.6))
-    ox, oy = shx, shy + (1 - bu) * 900
-    d = ImageDraw.Draw(cv)
-    x0, y0, cw, ch = 130, 350, 142, 330
-    d.rounded_rectangle([x0 - 24, y0 - 24 + oy, x0 + cw * 10 + 215 + 24, y0 + ch + 24 + oy], 28,
-                        fill=(8, 12, 40), outline=(190, 200, 235), width=6)
-    total = 0
-    strikes_in = 0
-    for f in range(10):
-        sb = 56.0 + f
-        cx0 = x0 + f * cw + ox
-        is_strike = bt >= sb
-        age = bt - sb
-        col = RED if is_strike else (22, 70, 200)
-        if is_strike and 0 <= age < 0.35:
-            col = (255, 90, 100) if age < 0.12 else RED
-        d.rectangle([cx0 + 3, y0 + oy + 3, cx0 + cw - 3, y0 + ch + oy - 3], fill=col)
-        d.rectangle([cx0 + 3, y0 + oy + 3, cx0 + cw - 3, y0 + 80 + oy], fill=(14, 40, 130) if not is_strike else (160, 14, 26))
-        fl = text_layer(str(f + 1), F_XB_IT, 40, (200, 215, 255))
-        put(cv, fl, cx0 + 38, y0 + oy + 40)
-        if is_strike:
-            sc = lerp(2.6, 1.0, back(age / 0.4, 1.5))
-            xl = text_layer("X", F_BLACK_IT, 130, WHITE, shadow=5, shadow_fill=(90, 0, 10))
-            put(cv, xl, cx0 + cw / 2 + 12, y0 + oy + 135, sc, alpha=clamp(age * 12))
-            val = (f + 1) * 30
-            vl = text_layer(str(val), F_BLACK_IT, 74 if val < 100 else 54, WHITE, shadow=3, shadow_fill=(0, 0, 40))
-            put(cv, vl, cx0 + cw / 2, y0 + oy + 255, lerp(1.7, 1, eo3(age / 0.3)), alpha=clamp(age * 10))
-            if 0 <= age < 0.45:
-                star_burst(cv, cx0 + cw / 2, y0 + oy + 140, 150 * eo3(age / 0.2) * (1 - clamp((age - 0.2) / 0.25)), 12, age * 4)
-    # total cell
-    tx = x0 + cw * 10 + ox + 6
-    d.rectangle([tx, y0 + oy + 3, tx + 203, y0 + ch + oy - 3], fill=(235, 40, 50) if bt >= 66 else (22, 70, 200))
-    tl = text_layer("TOTAL", F_XB_IT, 42, WHITE, tracking=3)
-    put(cv, tl, tx + 102, y0 + oy + 45)
-    shown = min(300, int(30 * max(0, (bt - 56.0 + 1))) if bt >= 56 else 0)
-    shown = min(300, 30 * int(clamp(bt - 56.0 + 1, 0, 10)))
-    tv = text_layer(str(shown), F_BLACK_IT, 120 if shown < 100 else 92, WHITE, shadow=5, shadow_fill=(0, 0, 40))
-    put(cv, tv, tx + 102, y0 + oy + 200)
-    # pins decoration
-    for k, px in enumerate((90, 1830)):
-        bounce = abs(math.sin((bt + k * 0.5) * math.pi)) * 26
-        draw_pin(cv, px, 1000 - bounce, (-8 if k == 0 else 8) * math.sin(bt * math.pi), 1.0, 220)
+    shx, shy = shake(bt, 106.0, 14, 0.8)
+    tl = text_layer("TEAM STANDINGS", F_BLACK_IT, 104, WHITE, shadow=8, shadow_fill=RED)
+    slam(cv, tl, 960, 92 + shy, bt, L0 + 0.1, 0.6, 2.2)
+    sub = text_layer("TCIM BOWLING NIGHT  ·  13 NOVEMBER 2026  ·  TOTAL PINS (2 GAMES)", F_XB_IT, 30,
+                     (200, 215, 255), tracking=3)
+    put(cv, sub, 960, 168, alpha=seg(bt, L0 + 1, L0 + 2))
+    ha = seg(bt, L0 + 1.5, L0 + 2.5)
+    for txt, cx in (("RANK", 330), ("TEAM", 475), ("GAME 1", 1095), ("GAME 2", 1295), ("TOTAL", 1485)):
+        lb = text_layer(txt, F_XB_IT, 26, (170, 190, 255), tracking=3)
+        put(cv, lb, cx, 236, alpha=ha)
+    for rank, team, g1, g2, total in TEAMS:
+        ta = L0 + 2 + (12 - rank) if rank > 1 else L0 + 14.0
+        u = (bt - ta) / 0.55
+        if u <= 0:
+            continue
+        y = 292 + (rank - 1) * 58 + (shy if rank == 1 else 0)
+        lay = row_layer(rank, team, g1, g2, total)
+        put(cv, lay, 960 + (1 - eo5(u)) * 1100, y, alpha=clamp(u * 4))
+    if bt >= 106.0:
+        tau = (bt - 106.0) * BEAT
+        y = 292
+        if tau < 0.6:
+            star_burst(cv, 960, y, 520 * eo3(tau / 0.3) * (1 - clamp((tau - 0.3) / 0.3)), 18, tau * 2)
+            put(cv, row_layer(*TEAMS[0]), 960, y + shy)
+        confetti(cv, tau, (960, y), 31, 150, speed=(600, 1900), up=0.55)
+        confetti(cv, tau - 0.1, (960, 0), 32, 80, kind="rain", life=4.0)
+        flash(cv, 0.7 * (1 - clamp(tau / 0.22)))
     # bottom message
-    if bt < 56:
-        r = text_layer("READY?", F_BLACK_IT, 130, WHITE, shadow=8, shadow_fill=RED)
-        al = clamp(seg(bt, 54.0, 54.4)) * (0.55 + 0.45 * abs(math.sin(bt * math.pi * 2)))
-        put(cv, r, 960, 870, 1.0 + 0.1 * (1 - (bt % 0.5) * 2), alpha=al)
-    else:
-        ml = text_layer("STRIKE AFTER STRIKE  —  THAT'S TEAMWORK!", F_XB_IT, 56, WHITE, tracking=2, shadow=4, shadow_fill=(0, 0, 40))
-        put(cv, ml, 960, 840, alpha=clamp(seg(bt, 56.2, 57.0)) * (1 - seg(bt, 65.5, 66.0)))
-    if bt >= 66:
-        tau = (bt - 66.0) * BEAT
-        flash(cv, 0.85 * (1 - clamp(tau / 0.25)))
-        pl = text_layer("PERFECT TEAMWORK!", F_BLACK_IT, 124, WHITE, stroke=14, stroke_fill=NAVY, shadow=10, shadow_fill=RED)
-        slam(cv, pl, 960 + shx, 880 + shy, bt, 66.0, 0.5, 2.4, 5, rot=-2)
-        confetti(cv, tau, (960, 520), 21, 150, speed=(600, 1900), up=0.6)
-        confetti(cv, tau - 0.1, (960, 0), 22, 90, kind="rain", life=3.5)
-    elif bt >= 56:
-        # strike confetti pops
-        for f in range(10):
-            sb = 56.0 + f
-            if bt >= sb:
-                confetti(cv, (bt - sb) * BEAT, (x0 + f * cw + cw / 2, 480), 100 + f, 24,
-                         speed=(300, 900), up=0.6, life=1.2)
+    if 106.0 <= bt < 113.0:
+        a = back(seg(bt, 106.2, 106.9), 1.4)
+        chip(cv, "CHAMPIONS: TEAM 7  ·  1,114 PINS", 960, 1010, 54, GOLD, INK, F_BLACK_IT, 56, scale=a,
+             alpha=clamp(a * 4) * (1 - seg(bt, 112.6, 113.0)), edge=WHITE)
+    elif bt >= 113.0:
+        a = back(seg(bt, 113.0, 113.7), 1.4)
+        chip(cv, "HIGHEST TEAM GAME: TEAM 7  ·  576", 960, 1010, 54, RED, WHITE, F_BLACK_IT, 56, scale=a,
+             alpha=clamp(a * 4), edge=WHITE)
     cv.paste((0, 0, 0), (0, 0), vignette())
     return cv
+
+
+@lru_cache(maxsize=64)
+def card_layer(rank, name, score, w=820, h=150):
+    S = 2
+    col = MEDAL[rank]
+    dx = int(h * 0.22)
+    big = Image.new("RGBA", ((w + dx) * S, h * S), (0, 0, 0, 0))
+    d = ImageDraw.Draw(big)
+    d.polygon([(dx * S, 0), ((w + dx) * S, 0), (w * S, h * S), (0, h * S)], fill=col + (255,))
+    e = 6 * S
+    d.polygon([(dx * S + e * 1.2, e), ((w + dx) * S - e, e), (w * S - e * 1.2, h * S - e), (e, h * S - e)],
+              fill=INK + (255,))
+    img = big.resize((w + dx, h), Image.LANCZOS)
+    bd = ImageDraw.Draw(img)
+    r, cx, cy = 46, 100, h // 2
+    bd.ellipse([cx - r, cy - r, cx + r, cy + r], fill=col)
+    nl = text_layer(str(rank), F_BLACK_IT, 64, INK)
+    img.alpha_composite(nl, (cx - nl.width // 2, cy - nl.height // 2))
+    tl = text_layer(name, F_BLACK_IT, 70, WHITE, shadow=3, shadow_fill=(0, 0, 40))
+    img.alpha_composite(tl, (170, (h - tl.height) // 2))
+    sl = text_layer(str(score), F_BLACK_IT, 88, col, shadow=3, shadow_fill=(0, 0, 40))
+    img.alpha_composite(sl, (w + dx - 40 - sl.width, (h - sl.height) // 2))
+    return img
+
+
+def scene_people(bt, tsec, L0, title, series, game, extras):
+    cv = radial_bg().copy()
+    sunburst(cv, tsec, (70, 120, 255), 0.18, 18)
+    shx, shy = shake(bt, L0 + 7.0, 16, 0.8)
+    tl = text_layer(title, F_BLACK_IT, 104, WHITE, shadow=8, shadow_fill=RED)
+    slam(cv, tl, 960, 92 + shy, bt, L0 + 0.1, 0.6, 2.2)
+    hu = back(seg(bt, L0 + 1.0, L0 + 1.8), 1.4)
+    chip(cv, "HIGHEST SERIES  (2 GAMES)", 500, 262, 38, NAVY, WHITE, F_XB_IT, 40, scale=hu,
+         alpha=clamp(hu * 4), edge=RED, tracking=2)
+    chip(cv, "HIGHEST SINGLE GAME", 1420, 262, 38, NAVY, WHITE, F_XB_IT, 40, scale=hu,
+         alpha=clamp(hu * 4), edge=RED, tracking=2)
+    reveal = {3: L0 + 2.0, 2: L0 + 4.5, 1: L0 + 7.0}
+    for rank in (3, 2, 1):
+        u = (bt - reveal[rank]) / 0.55
+        if u <= 0:
+            continue
+        y = 450 + (rank - 1) * 200 + shy
+        for lst, cx, side in ((series, 500, -1), (game, 1420, 1)):
+            nm, sc = lst[rank - 1]
+            put(cv, card_layer(rank, nm, sc), cx + side * (1 - eo5(u)) * 1100, y, alpha=clamp(u * 4))
+    if bt >= L0 + 7.0:
+        tau = (bt - (L0 + 7.0)) * BEAT
+        if tau < 0.6:
+            for cx in (500, 1420):
+                star_burst(cv, cx, 450, 190 * eo3(tau / 0.3) * (1 - clamp((tau - 0.3) / 0.3)), 14, tau * 2)
+                put(cv, card_layer(1, *(series if cx == 500 else game)[0]), cx, 450 + shy)
+        confetti(cv, tau, (960, 450), int(L0) + 7, 140, speed=(600, 1800), up=0.55)
+        flash(cv, 0.6 * (1 - clamp(tau / 0.2)))
+    for k, txt in enumerate(extras):
+        a0 = L0 + 9.5 + k * 2.2
+        a1 = a0 + 2.2 if k < len(extras) - 1 else L0 + 15
+        if a0 <= bt < a1 + 0.3:
+            a = back(seg(bt, a0, a0 + 0.7), 1.4)
+            out = seg(bt, a1 - 0.3, a1) if k < len(extras) - 1 else 0
+            chip(cv, txt, 960, 1010, 46, GOLD if k == 0 else RED, INK if k == 0 else WHITE, F_BLACK_IT, 50,
+                 scale=a, alpha=clamp(a * 4) * (1 - out), edge=WHITE)
+    cv.paste((0, 0, 0), (0, 0), vignette())
+    return cv
+
+
+def scene_men(bt, tsec):
+    return scene_people(bt, tsec, 120.0, "MEN'S TOP 3", AWARDS["men_series"], AWARDS["men_game"],
+                        ["RUDY: HIGH GAME 157  ·  HIGH SERIES 286"])
+
+
+def scene_women(bt, tsec):
+    return scene_people(bt, tsec, 134.0, "WOMEN'S TOP 3", AWARDS["women_series"], AWARDS["women_game"],
+                        ["AISHA: HIGH GAME 125  ·  HIGH SERIES 225",
+                         "STAR BOWLER: AIN  ·  +16 PINS OVER AVERAGE"])
 
 
 def scene_hero(bt, tsec):
-    second = bt >= 78.0
+    b0 = 148.0
+    lb = bt - b0
+    second = lb >= 10.0
     pulse = (1 - (bt % 1.0)) ** 3
     if not second:
-        u = seg(bt, 67.5, 78.0)
-        cv = view(photo("g0214"), (0.0, 0.0, 1.0), D2K(160, 200, 1680), u, pulse * 0.7)
+        u = seg(lb, -0.5, 10.0)
+        cv = view(photo("g0214"), (0.0, 0.0, 1.0), D2K(160, 200, 1680), u, pulse * 0.5)
     else:
-        u = seg(bt, 78.0, 88.0)
-        cv = view(photo("g0224"), (0.0, 0.0, 1.0), D2K(100, 150, 1800), u, pulse * 0.7)
+        u = seg(lb, 10.0, 20.0)
+        cv = view(photo("g0224"), (0.0, 0.0, 1.0), D2K(100, 150, 1800), u, pulse * 0.5)
     cv = cv.copy()
     cv.paste((6, 12, 60), (0, 0), top_grad())
-    shx, shy = shake(bt, 68.0, 8, 0.4)
+    shx, shy = shake(bt, b0 + 0.5, 8, 0.4)
 
     def line(txt, size, start, exit_at, y):
         l = text_layer(txt, F_BLACK_IT, size, WHITE, shadow=9, shadow_fill=(0, 0, 40))
-        slam(cv, l, 120 + l.width / 2 + shx, y + shy, bt, start, 0.5, 2.2, exit_at=exit_at)
+        slam(cv, l, 120 + l.width / 2 + shx, y + shy, bt, b0 + start, 0.5, 2.2, exit_at=b0 + exit_at)
 
     def bar(txt, size, start, end, y):
-        if start <= bt < end + 0.5:
-            cu = back(seg(bt, start, start + 0.7), 1.5)
+        if b0 + start <= bt < b0 + end + 0.5:
+            cu = back(seg(bt, b0 + start, b0 + start + 0.7), 1.5)
             chip(cv, txt, 120 + (1 - cu) * -1400, y, size, RED, WHITE, F_BLACK_IT, 56,
-                 anchor="l", shadow=5, alpha=clamp(cu * 4) * (1 - eo3(seg(bt, end, end + 0.4))))
+                 anchor="l", shadow=5, alpha=clamp(cu * 4) * (1 - eo3(seg(bt, b0 + end, b0 + end + 0.4))))
 
     if not second:
-        line("SAME TEAM.", 150, 68.1, 73.8, 190)
-        bar("BIGGER MEMORIES!", 118, 70.0, 73.6, 350)
-        line("IT'S NOT JUST A GAME.", 112, 74.0, 77.7, 190)
-        bar("IT'S A STRONGER US.", 118, 76.0, 77.6, 350)
+        line("SAME TEAM.", 150, 0.6, 5.6, 190)
+        bar("BIGGER MEMORIES!", 118, 2.4, 5.4, 350)
+        line("IT'S NOT JUST A GAME.", 112, 6.2, 9.7, 190)
+        bar("IT'S A STRONGER US.", 118, 8.0, 9.6, 350)
     else:
-        line("THANK YOU, TEAM!", 140, 78.1, 83.8, 190)
-        bar("YOU MADE IT UNFORGETTABLE!", 100, 80.0, 83.6, 350)
+        line("THANK YOU, TEAM!", 140, 10.6, 15.6, 190)
+        bar("YOU MADE IT UNFORGETTABLE!", 100, 12.4, 15.4, 350)
         l3 = text_layer("SEE YOU AT THE NEXT ONE!", F_BLACK_IT, 100, WHITE, shadow=8, shadow_fill=(0, 0, 40))
-        slam(cv, l3, 120 + l3.width / 2, 210, bt, 84.0, 0.5, 2.0)
+        slam(cv, l3, 120 + l3.width / 2, 210, bt, b0 + 16.0, 0.5, 2.0)
     d = ImageDraw.Draw(cv)
     d.polygon([(W, H), (W - 520, H), (W, H - 180)], fill=NAVY)
     d.polygon([(W, H), (W - 320, H), (W, H - 110)], fill=RED)
@@ -847,65 +985,64 @@ def scene_hero(bt, tsec):
     d.polygon([(0, H), (300, H), (0, H - 105)], fill=NAVY)
     tag = text_layer("TCIM BOWLING NIGHT 2026", F_XB_IT, 36, WHITE, shadow=3, tracking=3)
     put(cv, tag, W - 40, 60, anchor="r")
-    for t0, s_ in ((68.0, 1), (76.0, 2), (78.0, 3)):
-        if bt >= t0:
-            confetti(cv, (bt - t0) * BEAT, (960, 420), 40 + s_, 90, speed=(500, 1500), up=0.6, life=2.6)
+    for t0, s_ in ((0.0, 1), (6.0, 2), (10.0, 3)):
+        if lb >= t0:
+            confetti(cv, (lb - t0) * BEAT, (960, 420), 40 + s_, 90, speed=(500, 1500), up=0.6, life=2.6)
     equalizer(cv, tsec, bt, H, 54, RED)
     cv.paste((0, 0, 0), (0, 0), vignette())
-    flash(cv, 0.6 * (1 - clamp((bt - 68.0) / 0.4)) if bt < 70 else (0.5 * (1 - clamp((bt - 78.0) / 0.35)) if 78 <= bt < 80 else 0))
+    flash(cv, 0.6 * (1 - clamp(lb / 0.4)) if lb < 2 else (0.5 * (1 - clamp((lb - 10) / 0.35)) if 10 <= lb < 12 else 0))
     return cv
 
 
 def scene_end(bt, tsec):
+    b0 = 168.0
+    lb = bt - b0
     cv = radial_bg().copy()
     sunburst(cv, tsec, (80, 130, 255), 0.30, 22)
     d = ImageDraw.Draw(cv)
-    # diagonal stripes
     for k in range(-2, 8):
         x = k * 380 + (tsec * 40) % 380
         d.polygon([(x, 0), (x + 60, 0), (x - 220, H), (x - 280, H)], fill=(18, 40, 140))
     cv.paste((0, 0, 0), (0, 0), vignette())
-    shx, shy = shake(bt, 88.0, 14, 0.7)
-    shx3, shy3 = shake(bt, 100.0, 20, 1.0)
+    shx, shy = shake(bt, b0, 14, 0.7)
+    shx3, shy3 = shake(bt, b0 + 12, 20, 1.0)
     shx += shx3
     shy += shy3
-    # wordmark
-    wm = tcim_wordmark(340)
-    slam(cv, wm, 960 + shx, 300 + shy, bt, 88.1, 0.6, 2.6, -5)
-    bl = text_layer("BOWLING NIGHT 2026", F_BLACK_IT, 120, WHITE, shadow=8, shadow_fill=RED)
-    if bt >= 90.0:
-        cu = back(seg(bt, 90.0, 90.8), 1.4)
+    wm = logo_layer(340)
+    slam(cv, wm, 960 + shx, 300 + shy, bt, b0 + 0.1, 0.6, 2.6, -5)
+    if lb >= 2.0:
+        cu = back(seg(lb, 2.0, 2.8), 1.4)
         chip(cv, "BOWLING NIGHT 2026", 960 + shx, 560 + shy, 120, RED, WHITE, F_BLACK_IT, 70, scale=cu,
              alpha=clamp(cu * 4), edge=WHITE, shadow=5)
-    if bt >= 92.0:
-        a = clamp(seg(bt, 92.0, 92.8))
+    if lb >= 4.0:
+        a = clamp(seg(lb, 4.0, 4.8))
         t1 = text_layer("STAFF ENGAGEMENT ACTIVITY  ·  YEC 2026", F_XB_IT, 50, WHITE, tracking=4, shadow=3)
         put(cv, t1, 960, 700 + (1 - eo3(a)) * 30, alpha=a)
-    if bt >= 93.0:
-        a = clamp(seg(bt, 93.0, 93.8))
+    if lb >= 5.0:
+        a = clamp(seg(lb, 5.0, 5.8))
         t2 = text_layer("13 NOVEMBER 2026  ·  WANGSA BOWL @ SETIA CITY MALL", F_SEMI, 40, (210, 225, 255), tracking=3)
         put(cv, t2, 960, 770 + (1 - eo3(a)) * 30, alpha=a)
-    if bt >= 94.5:
-        cu = back(seg(bt, 94.5, 95.3), 1.4)
+    if lb >= 6.5:
+        cu = back(seg(lb, 6.5, 7.3), 1.4)
         t3 = text_layer("PLAY  ·  LAUGH  ·  BOND", F_BLACK_IT, 92, GOLD, shadow=6, shadow_fill=(0, 0, 40), tracking=4)
-        put(cv, t3, 960, 880, cu, alpha=clamp(cu * 4) * (1 - seg(bt, 99.2, 99.7)))
-    # dancing pins along the bottom
+        put(cv, t3, 960, 880, cu, alpha=clamp(cu * 4) * (1 - seg(lb, 11.2, 11.7)))
     for k in range(9):
         px = 130 + k * 207
         ph = (bt + k * 0.18) % 1.0
         bounce = abs(math.sin(ph * math.pi)) * 34
-        if bt >= 89.0:
-            appear = back(seg(bt, 89.0 + k * 0.12, 89.6 + k * 0.12))
-            draw_pin(cv, px, 1052 - bounce - (1 - clamp(appear)) * 200, 7 * math.sin((bt + k) * math.pi), clamp(appear * 3), 120)
-    # final hit
-    if bt >= 100.0:
-        tau = (bt - 100.0) * BEAT
+        if lb >= 1.0:
+            appear = back(seg(lb, 1.0 + k * 0.12, 1.6 + k * 0.12))
+            draw_pin(cv, px, 1052 - bounce - (1 - clamp(appear)) * 200, 7 * math.sin((bt + k) * math.pi),
+                     clamp(appear * 3), 120)
+    if lb >= 12.0:
+        tau = (lb - 12.0) * BEAT
         flash(cv, 0.9 * (1 - clamp(tau / 0.3)))
         confetti(cv, tau, (960, 520), 77, 170, speed=(700, 2100), up=0.5, life=3.0)
-        t4 = text_layer("IT'S A STRONGER US!", F_BLACK_IT, 112, WHITE, stroke=11, stroke_fill=NAVY, shadow=8, shadow_fill=RED)
-        slam(cv, t4, 960, 880, bt, 100.0, 0.5, 2.2, 4, rot=-2)
-    if 88 <= bt < 89:
-        flash(cv, 0.6 * (1 - clamp((bt - 88.0) / 0.3)))
+        t4 = text_layer("IT'S A STRONGER US!", F_BLACK_IT, 112, WHITE, stroke=11, stroke_fill=NAVY, shadow=8,
+                        shadow_fill=RED)
+        slam(cv, t4, 960, 880, bt, b0 + 12.0, 0.5, 2.2, 4, rot=-2)
+    if 0 <= lb < 1:
+        flash(cv, 0.6 * (1 - clamp(lb / 0.3)))
     return cv
 
 
@@ -913,22 +1050,12 @@ def scene_end(bt, tsec):
 def render_frame(i):
     tsec = i / FPS
     bt = tsec / BEAT
-    if bt < WIPES[0]:
-        cv = scene_intro(bt, tsec)
-    elif bt < WIPES[1]:
-        cv = scene_title(bt, tsec)
-    elif bt < WIPES[2]:
-        cv = scene_montage(bt, tsec)
-    elif bt < WIPES[3]:
-        cv = scene_score(bt, tsec)
-    elif bt < WIPES[4]:
-        cv = scene_hero(bt, tsec)
-    else:
-        cv = scene_end(bt, tsec)
+    scenes = [scene_intro, scene_title, scene_montage, scene_teams, scene_men, scene_women, scene_hero, scene_end]
+    k = sum(1 for c in WIPES if bt >= c)
+    cv = scenes[k](bt, tsec)
     for c in WIPES:
         wipe(cv, bt, c)
-    # slight global fade out at the very end
-    fo = seg(bt, 102.2, 104.0)
+    fo = seg(bt, 182.2, 184.0)
     if fo > 0:
         flash(cv, fo, DEEP)
     return cv
@@ -949,6 +1076,7 @@ def render_range(args):
 
 def main():
     mode = sys.argv[1]
+    prep_clips()
     if mode == "preview":
         out = sys.argv[2]
         beats = [float(x) for x in sys.argv[3].split(",")]
