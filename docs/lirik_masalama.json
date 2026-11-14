@@ -1,0 +1,15 @@
+{
+  "sumber": "Klip TikTok yang dihantar pengguna (lirik dibaca daripada sari kata pada skrin; masa = masa sari kata dipaparkan)",
+  "baris": {
+    "L1": {"ar": "مَعَ السَّلَامَةِ فِى أَمَانِهْ شَيْخَنَا", "ms": "Selamat jalan semoga dalam keselamatan wahai guruku"},
+    "L2": {"ar": "اَللهُ رَبِّ ارْحَمْ مُرَبِّى رُوْحِنَا يَا رَبَّنَا", "ms": "Ya Allah Tuhanku, rahmatilah pendidik jiwa kami wahai Tuhanku"},
+    "L3": {"ar": "يَا بَدْرَتِمٍّ حَازَ كُلَّ كَمَال", "ms": "Wahai bulan purnama yang indah lagi sempurna"},
+    "L4": {"ar": "مَا ذَا يُعَبِّرُ عَنْ عُلَاكَ مَقَالِيْ", "ms": "Ketinggianmu tidak bisa terungkap dengan kata-kata"}
+  },
+  "urutan": [
+    ["L1", 3.5, 10.0], ["L2", 10.5, 21.5], ["L1", 21.75, 28.5], ["L2", 29.0, 38.75],
+    ["L3", 39.25, 48.25], ["L4", 48.75, 57.5], ["L3", 57.5, 66.0], ["L4", 66.5, 74.75],
+    ["L1", 75.25, 82.25], ["L2", 82.5, 93.0], ["L1", 93.25, 100.0], ["L2", 100.25, 110.75]
+  ],
+  "tempoh_lagu_s": 112
+}
