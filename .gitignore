@@ -16,3 +16,4 @@ Thumbs.db
 # Sementara
 *.tmp
 *.log
+__pycache__/
