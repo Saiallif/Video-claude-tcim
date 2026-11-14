@@ -273,7 +273,7 @@ class Scene:
                 clip = work / f"spot_{fn}_{ss}.mp4"
                 if not clip.exists():
                     run(["ffmpeg", "-v", "error", "-y", "-ss", str(ss), "-t", f"{SPOT_D + 1.0:.1f}", "-i", str(media / fn), "-an",
-                         "-vf", "fps=30,scale=1280:720:force_original_aspect_ratio=decrease", "-c:v", "libx264", "-crf", "17", str(clip)])
+                         "-vf", "fps=30,scale=1280:720:force_original_aspect_ratio=decrease:force_divisible_by=2", "-c:v", "libx264", "-crf", "17", str(clip)])
                 self.spots.append(dict(kind="vid", clip=clip, t0=t0, cap=None, k=-1, last=None))
 
     def theta(self, t):
