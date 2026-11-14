@@ -28,6 +28,8 @@ TX = 0.9           # tempoh peralihan (saat), lembut dan syahdu
 TOTAL = 113.0
 SONG = ROOT / "assets/audio/maasalama_zikir_113s.wav"
 LYR = json.load(open(ROOT / "docs/lirik_masalama.json", encoding="utf-8"))
+# Masa sari kata dalam klip rujukan lewat ~0.4s berbanding vokal (disemak dengan jeda senyap pada audio): majukan sedikit
+LYR["urutan"] = [[k, max(0.0, t0 - 0.4), t1 - 0.15] for k, t0, t1 in LYR["urutan"]]
 NAMA = "Ustaz Dr. Mohd Nazri Bin Mat Yasin"
 PORTRAIT = "file_000000003e508211b80101a9e811f085.png"   # gambar potret ustaz (dalam folder Drive)
 LOGO_PLAIN = ROOT / "assets/images/mutawwif_logo_plain.png"
@@ -356,7 +358,7 @@ def main():
     g = []
     cur = "0:v"
     for k in range(1, n):
-        g.append(f"[{cur}][{k}:v]xfade=transition={TRANS.get(SCENES[k]['kind'], 'fade')}:duration={TX}:offset={tms[k][0]:.3f}[x{k}]")
+        g.append(f"[{cur}][{k}:v]xfade=transition={('fadeblack' if SCENES[k - 1]['kind'] in ('hero', 'hero2', 'open') else TRANS.get(SCENES[k]['kind'], 'fade'))}:duration={TX}:offset={tms[k][0]:.3f}[x{k}]")
         cur = f"x{k}"
     # kecerunan bawah (mula 3.0s) supaya lirik jelas; sembunyi pada kad pembuka & penutup
     g.append(f"[{ig}:v]format=rgba,fade=t=in:st=3.0:d=1.0:alpha=1,fade=t=out:st=107.4:d=0.8:alpha=1[gr]")
@@ -365,7 +367,7 @@ def main():
     for j, (key, t0, t1) in enumerate(LYR["urutan"]):
         idx = ig + 1 + j
         dur = t1 - t0
-        g.append(f"[{idx}:v]format=rgba,fade=t=in:st=0:d=0.8:alpha=1,fade=t=out:st={dur - 0.7:.2f}:d=0.7:alpha=1,setpts=PTS+{t0}/TB[ly{j}]")
+        g.append(f"[{idx}:v]format=rgba,fade=t=in:st=0:d=0.6:alpha=1,fade=t=out:st={dur - 0.5:.2f}:d=0.5:alpha=1,setpts=PTS+{t0}/TB[ly{j}]")
         g.append(f"[{last}][ly{j}]overlay=format=auto:eof_action=pass[lv{j}]")
         last = f"lv{j}"
     g.append(f"[{last}]format=gbrp[vv]")
